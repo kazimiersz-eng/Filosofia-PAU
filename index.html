@@ -31,7 +31,7 @@ th, td { border: 1px solid var(--border); padding: 12px; font-size: 0.85rem; lin
 
 /* Cabeceras */
 thead th { background: #fdfdfd; font-weight: 600; text-align: center; }
-.th-epoca { font-size: 0.75rem; letter-spacing: 0.1em; color: #666; }
+.th-epoca { font-size: 0.75rem; letter-spacing: 0.1em; color: #333; }
 
 /* Filas de Eje */
 .row-eje td { background: var(--eje-bg) !important; color: #fff !important; font-weight: 600; cursor: pointer; padding: 14px 12px; border-bottom: 2px solid #000; text-transform: uppercase; letter-spacing: 1px; }
@@ -52,6 +52,7 @@ thead th { background: #fdfdfd; font-weight: 600; text-align: center; }
 .row-data:hover td { filter: brightness(0.96); }
 
 #loading { padding: 2rem; text-align: center; font-style: italic; }
+#error-box { display: none; padding: 2rem; color: red; font-weight: bold; text-align: center; }
 </style>
 </head>
 <body>
@@ -76,6 +77,7 @@ thead th { background: #fdfdfd; font-weight: 600; text-align: center; }
 
 <div class="table-wrap">
   <div id="loading">Cargando datos desde la nube...</div>
+  <div id="error-box"></div>
   <table id="tabla" style="display:none">
     <thead id="thead"></thead>
     <tbody id="tbody"></tbody>
@@ -98,31 +100,41 @@ const AUTORES = [
 let autoresVisibles = new Set(AUTORES.map(a => a.name));
 let bloques = {}; 
 
+// Escudo anti-errores para celdas vacías de Google Sheets
+function getCellVal(row, index) {
+  if (!row || !row.c || !row.c[index]) return '';
+  const cell = row.c[index];
+  if (cell.v === null || cell.v === undefined) return '';
+  return String(cell.v).trim();
+}
+
 function detectType(cells) {
-  const first = String(cells[0] || '').trim();
+  const first = cells[0];
   if (!first) return 'empty';
 
-  // 1. TRUCO MANUAL: Si pones un ">" delante en tu Excel, fuerza que sea un bloque Eje
+  // 1. Truco manual: Si empieza por >
   if (first.startsWith('>')) return 'eje';
 
-  // 2. Comprobación de si el resto de columnas están vacías
-  let emptyCount = 0;
-  for (let i = 1; i <= AUTORES.length; i++) {
-    const val = String(cells[i] || '').trim().toLowerCase();
-    // A veces Google Sheets manda la palabra "null" cuando la celda está vacía
-    if (val === '' || val === 'null' || val === '-' || val === '—' || val === 'na') {
-      emptyCount++;
+  // 2. Si empieza por Estrella
+  if (first.startsWith('★')) return 'principio';
+
+  // 3. Patrón robusto: Si empieza por letra y un guión, punto o paréntesis (Ej: "A -", "B)", "C.")
+  if (/^[A-Z]\s*[-—–.)]/i.test(first)) return 'eje';
+
+  // 4. Última comprobación: Si empieza por Letra sola y todos los autores están vacíos
+  const startsWithLetter = /^[A-Z]/i.test(first);
+  let allEmpty = true;
+  for (let i = 1; i < cells.length; i++) {
+    const val = cells[i].toLowerCase();
+    if (val !== '' && val !== 'null' && val !== '-' && val !== '—' && val !== 'na') {
+      allEmpty = false;
+      break;
     }
   }
-  const restEmpty = (emptyCount === AUTORES.length);
 
-  // 3. Verifica que empiece por una Letra mayúscula o Estrella
-  // (Esto detecta a la perfección cosas como "A - ONTOLOGÍA" o "B) Ética")
-  if (restEmpty && first.match(/^[A-Z★]/i)) {
+  if (startsWithLetter && allEmpty) {
     return 'eje';
   }
-
-  if (first.startsWith('★')) return 'principio';
 
   return 'data';
 }
@@ -137,6 +149,7 @@ function buildTable(data) {
          <th colspan="1" class="th-epoca" data-ep="medieval" style="background:var(--medieval)">MEDIEVAL</th>
          <th colspan="2" class="th-epoca" data-ep="moderna" style="background:var(--moderna)">MODERNA</th>
          <th colspan="2" class="th-epoca" data-ep="contemp" style="background:var(--contemp)">CONTEMPORÁNEA</th></tr>`;
+  
   let h2 = '<tr>';
   AUTORES.forEach(a => { h2 += `<th data-auth="${a.name}">${a.name}</th>`; });
   h2 += '</tr>';
@@ -146,18 +159,16 @@ function buildTable(data) {
   let counter = 0;
 
   rows.forEach(r => {
-    // Extraemos las celdas con seguridad
+    // Extracción ultra-segura de celdas
     const cells = [];
     for (let i = 0; i <= AUTORES.length; i++) {
-       cells.push(r.c && r.c[i] ? String(r.c[i].v) : '');
+       cells.push(getCellVal(r, i));
     }
 
     const type = detectType(cells);
     if (type === 'empty') return;
 
     const tr = document.createElement('tr');
-
-    // Limpiamos el texto por si has usado el truco de la flechita >
     let textoConcepto = cells[0].replace(/^>\s*/, ''); 
 
     if (type === 'eje') {
@@ -175,16 +186,18 @@ function buildTable(data) {
       
       AUTORES.forEach((a, idx) => {
         const val = cells[idx + 1] || '—';
-        const isNA = val === '—' || val === 'null' || val === '' || val === '-';
-        // Añadimos el color de fondo usando a.bg
+        const isNA = (val === '—' || val === 'null' || val === '' || val === '-');
         const bgClass = type === 'principio' ? '' : a.bg;
         
         html += `<td data-auth="${a.name}" class="${bgClass} ${isNA ? 'na-cell' : ''}">${isNA ? '—' : val}</td>`;
       });
+      
       tr.innerHTML = html;
       tbody.appendChild(tr);
       
-      if (currentEjeId) bloques[currentEjeId].children.push(tr);
+      if (currentEjeId) {
+        bloques[currentEjeId].children.push(tr);
+      }
     }
   });
 
@@ -198,9 +211,10 @@ function toggleEje(id) {
   if (!b) return;
   b.expanded = !b.expanded;
   
-  // Rotación del icono y estado
+  // Añade o quita la clase que rota el icono
   b.main.classList.toggle('collapsed', !b.expanded);
   
+  // Muestra u oculta las filas de ese bloque
   b.children.forEach(row => {
     row.style.display = b.expanded ? '' : 'none';
   });
@@ -231,7 +245,7 @@ function toggleAutor(nombre, btn) {
 }
 
 function applyVisibility() {
-  // Solo se ocultan los TH y TD (nunca los botones)
+  // Mostrar/Ocultar Celdas de Autores (sin tocar los botones)
   AUTORES.forEach(a => {
     const visible = autoresVisibles.has(a.name);
     document.querySelectorAll(`th[data-auth="${a.name}"], td[data-auth="${a.name}"]`).forEach(el => {
@@ -239,7 +253,7 @@ function applyVisibility() {
     });
   });
 
-  // Ajustar colspans de las épocas
+  // Ajustar colspans de las Épocas (la fila superior)
   const epocas = ['antigua', 'medieval', 'moderna', 'contemp'];
   epocas.forEach(ep => {
     const th = document.querySelector(`.th-epoca[data-ep="${ep}"]`);
@@ -253,19 +267,27 @@ function applyVisibility() {
     }
   });
 
-  // Ajustar colspan de las filas de los ejes
+  // Ajustar colspan de las filas negras (Ejes)
   const totalCols = 1 + autoresVisibles.size;
   document.querySelectorAll('.row-eje td').forEach(td => {
     td.colSpan = totalCols;
   });
 }
 
-fetch(URL).then(r => r.text()).then(raw => {
-  const data = JSON.parse(raw.replace(/^[^(]+\(/, '').replace(/\);?\s*$/, ''));
-  buildTable(data);
-}).catch(e => {
-   document.getElementById('loading').textContent = "Error cargando datos: " + e.message;
-});
+// Inicialización
+fetch(URL)
+  .then(r => r.text())
+  .then(raw => {
+    const jsonString = raw.replace(/^[^(]+\(/, '').replace(/\);?\s*$/, '');
+    const data = JSON.parse(jsonString);
+    buildTable(data);
+  })
+  .catch(e => {
+    document.getElementById('loading').style.display = 'none';
+    const errorBox = document.getElementById('error-box');
+    errorBox.style.display = 'block';
+    errorBox.textContent = "Error interno cargando los datos: " + e.message;
+  });
 </script>
 </body>
 </html>
