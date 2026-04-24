@@ -15,7 +15,7 @@ body { font-family: 'Source Sans 3', sans-serif; background: var(--page-bg); mar
 header { padding: 1.5rem 2rem; background: #fff; border-bottom: 1px solid var(--border); }
 header h1 { font-family: 'Playfair Display', serif; margin: 0; font-size: 1.4rem; color: #333; }
 
-/* Controles: Aquí los botones NO desaparecerán */
+/* Controles */
 .controls { padding: 1rem 2rem; background: #fff; border-bottom: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; position: sticky; top: 0; z-index: 100; }
 .group-label { font-weight: 600; font-size: 0.85rem; margin-right: 8px; color: #666; }
 .btn { padding: 6px 14px; border: 1px solid var(--border); border-radius: 4px; background: #fff; cursor: pointer; font-size: 0.85rem; transition: 0.2s; font-weight: 400; }
@@ -33,9 +33,9 @@ thead th { background: #fdfdfd; font-weight: 600; text-align: center; }
 .th-epoca { font-size: 0.75rem; letter-spacing: 0.1em; color: #666; }
 
 /* Filas de Eje (Las de las LETRAS) */
-.row-eje td { background: var(--eje-bg) !important; color: #fff !important; font-weight: 600; cursor: pointer; padding: 14px 12px; border-bottom: 2px solid #000; }
+.row-eje td { background: var(--eje-bg) !important; color: #fff !important; font-weight: 600; cursor: pointer; padding: 14px 12px; border-bottom: 2px solid #000; text-transform: uppercase; letter-spacing: 1px; }
 .row-eje:hover { background: #333 !important; }
-.toggle-icon { display: inline-block; width: 20px; font-family: monospace; font-size: 1.1rem; }
+.toggle-icon { display: inline-block; width: 25px; font-family: monospace; font-size: 1.1rem; color: #aaa; }
 
 .td-concepto { background: #f9f9f7; font-weight: 600; width: 200px; }
 .row-principio td { background: #f2f2f0; font-weight: 700; border-top: 2px solid #444; }
@@ -86,17 +86,32 @@ const AUTORES = [
 ];
 
 let autoresVisibles = new Set(AUTORES.map(a => a.name));
-let bloques = {}; // Guardará las filas hijas de cada eje
+let bloques = {}; 
 
 function detectType(cells) {
   const first = (cells[0] || '').trim();
   if (!first) return 'empty';
-  // Revisamos si el resto de columnas de autores están vacías
-  const restEmpty = cells.slice(1).every(c => !c || c.trim() === '' || c === 'null');
   
-  // Es un EJE si empieza por Letra o Estrella y los autores están vacíos
-  if (restEmpty && (first.match(/^[A-Z]/i) || first.startsWith('★'))) return 'eje';
+  // 1. Consideramos "vacío" no solo a la falta de texto, sino también a celdas que 
+  // tengan guiones, rayas o el texto "null" que inyecta a veces Google.
+  const restEmpty = cells.slice(1).every(c => {
+    if (!c) return true;
+    const text = c.trim();
+    return text === '' || text === 'null' || text === '-' || text === '—';
+  });
+
+  // 2. Si la celda empieza por una Estrella
   if (first.startsWith('★')) return 'principio';
+
+  // 3. Patrones evidentes de sección. Ej: "A - Algo", "B. Algo", "C) Algo", o solo "A"
+  const formatoLetraEvidente = /^[A-Z]\s*[\-\.\)]/i.test(first) || first.length === 1;
+
+  // Si tiene el formato evidente de Letra, o si el resto de columnas de autores 
+  // están "vacías" y el texto empieza por una letra mayúscula, es un bloque desplegable.
+  if (formatoLetraEvidente || (restEmpty && /^[A-Z]/i.test(first))) {
+    return 'eje';
+  }
+
   return 'data';
 }
 
@@ -105,7 +120,6 @@ function buildTable(data) {
   const thead = document.getElementById('thead');
   const tbody = document.getElementById('tbody');
 
-  // CABECERA
   let h1 = '<tr><th rowspan="2">EJE / CONCEPTO</th>';
   h1 += `<th colspan="1" class="th-epoca" data-ep="antigua" style="background:var(--antigua)">ANTIGUA</th>
          <th colspan="1" class="th-epoca" data-ep="medieval" style="background:var(--medieval)">MEDIEVAL</th>
@@ -116,7 +130,6 @@ function buildTable(data) {
   h2 += '</tr>';
   thead.innerHTML = h1 + h2;
 
-  // CUERPO
   let currentEjeId = null;
   let counter = 0;
 
@@ -134,7 +147,6 @@ function buildTable(data) {
       
       tr.className = 'row-eje';
       tr.innerHTML = `<td colspan="${AUTORES.length + 1}"><span class="toggle-icon">▼</span> ${cells[0]}</td>`;
-      // El clic ahora llama a una función que usa el ID único
       tr.onclick = () => toggleEje(currentEjeId);
       tbody.appendChild(tr);
     } else {
@@ -155,7 +167,6 @@ function buildTable(data) {
   document.getElementById('tabla').style.display = 'table';
 }
 
-// 1. PLEGADO INDIVIDUAL CORREGIDO
 function toggleEje(id) {
   const b = bloques[id];
   b.expanded = !b.expanded;
@@ -165,7 +176,6 @@ function toggleEje(id) {
   });
 }
 
-// 2. EXPANDIR TODO CORREGIDO
 function expandAll() {
   for (let id in bloques) {
     if (!bloques[id].expanded) toggleEje(id);
@@ -178,7 +188,6 @@ function collapseAll() {
   }
 }
 
-// 3. VISIBILIDAD DE AUTORES (BOTONES QUE NO DESAPARECEN)
 function toggleAutor(nombre, btn) {
   if (autoresVisibles.has(nombre)) {
     if (autoresVisibles.size === 1) return;
@@ -192,16 +201,13 @@ function toggleAutor(nombre, btn) {
 }
 
 function applyVisibility() {
-  // Ocultar columnas: Solo afectamos a TD y TH (nunca a los BUTTON)
   AUTORES.forEach(a => {
     const visible = autoresVisibles.has(a.name);
-    // Selector específico para la tabla para no tocar los botones de arriba
     document.querySelectorAll(`th[data-auth="${a.name}"], td[data-auth="${a.name}"]`).forEach(el => {
       el.style.display = visible ? '' : 'none';
     });
   });
 
-  // Ajustar cabeceras de Época
   const epocas = ['antigua', 'medieval', 'moderna', 'contemp'];
   epocas.forEach(ep => {
     const th = document.querySelector(`.th-epoca[data-ep="${ep}"]`);
@@ -214,7 +220,6 @@ function applyVisibility() {
     }
   });
 
-  // Ajustar el colspan de las filas negras (Ejes)
   const totalCols = 1 + autoresVisibles.size;
   document.querySelectorAll('.row-eje td').forEach(td => {
     td.colSpan = totalCols;
