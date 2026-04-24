@@ -159,7 +159,6 @@ function buildTable(data) {
   let counter = 0;
 
   rows.forEach(r => {
-    // Extracción ultra-segura de celdas
     const cells = [];
     for (let i = 0; i <= AUTORES.length; i++) {
        cells.push(getCellVal(r, i));
@@ -178,7 +177,11 @@ function buildTable(data) {
       
       tr.className = 'row-eje';
       tr.innerHTML = `<td colspan="${AUTORES.length + 1}"><span class="toggle-icon">▼</span> ${textoConcepto}</td>`;
-      tr.onclick = () => toggleEje(currentEjeId);
+      
+      // EL PARCHE MÁGICO: Congelamos el ID para este botón específico
+      const idBloque = currentEjeId; 
+      tr.onclick = () => toggleEje(idBloque);
+      
       tbody.appendChild(tr);
     } else {
       tr.className = type === 'principio' ? 'row-principio' : 'row-data';
