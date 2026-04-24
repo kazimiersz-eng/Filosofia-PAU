@@ -336,9 +336,13 @@ function parseGvizJson(raw) {
 function detectRowType(cells) {
   const first = (cells[0] || '').trim();
   if (!first) return 'empty';
-  // Es un Eje si tiene texto y el resto de celdas de autores están vacías
+  
+  // Comprobamos si las celdas de los autores están vacías
   const restEmpty = cells.slice(1).every(c => !c || c.trim() === '');
-  if (restEmpty && first.length > 1) return 'eje'; 
+  
+  // Si el resto está vacío y la primera celda empieza por una Letra (ej: "A", "A.", "A. Ontología")
+  if (restEmpty && first.match(/^[A-Z]/i)) return 'eje'; 
+  
   if (first.startsWith('★')) return 'principio';
   return 'data';
 }
