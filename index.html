@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tabla comparativa · Historia de la Filosofía PAU</title>
+<title>Tabla comparativa · Historia de la Filosofía</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -15,13 +15,13 @@ body { font-family: 'Source Sans 3', sans-serif; background: var(--page-bg); mar
 header { padding: 1.5rem 2rem; background: #fff; border-bottom: 1px solid var(--border); }
 header h1 { font-family: 'Playfair Display', serif; margin: 0; font-size: 1.4rem; color: #333; }
 
-/* Controles */
-.controls { padding: 1rem 2rem; background: #fff; border-bottom: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+/* Controles: Aquí los botones NO desaparecerán */
+.controls { padding: 1rem 2rem; background: #fff; border-bottom: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; position: sticky; top: 0; z-index: 100; }
 .group-label { font-weight: 600; font-size: 0.85rem; margin-right: 8px; color: #666; }
-.btn { padding: 5px 12px; border: 1px solid var(--border); border-radius: 4px; background: #fff; cursor: pointer; font-size: 0.8rem; transition: 0.2s; }
-.btn.active { background: #444; color: #fff; border-color: #000; }
-.btn-action { background: #f0f0f0; font-weight: 600; }
-.btn-action:hover { background: #e0e0e0; }
+.btn { padding: 6px 14px; border: 1px solid var(--border); border-radius: 4px; background: #fff; cursor: pointer; font-size: 0.85rem; transition: 0.2s; font-weight: 400; }
+.btn.active { background: #444; color: #fff; border-color: #000; font-weight: 600; }
+.btn-action { background: #f0f0f0; font-weight: 600; border: 1px solid #bbb; }
+.btn-action:hover { background: #ddd; }
 
 /* Tabla */
 .table-wrap { padding: 1.5rem; overflow-x: auto; }
@@ -31,18 +31,14 @@ th, td { border: 1px solid var(--border); padding: 12px; font-size: 0.85rem; lin
 /* Cabeceras */
 thead th { background: #fdfdfd; font-weight: 600; text-align: center; }
 .th-epoca { font-size: 0.75rem; letter-spacing: 0.1em; color: #666; }
-.th-antigua { background: var(--antigua) !important; }
-.th-medieval { background: var(--medieval) !important; }
-.th-moderna { background: var(--moderna) !important; }
-.th-contemp { background: var(--contemp) !important; }
 
-/* Filas de Eje (Conceptos) */
-.row-eje td { background: var(--eje-bg); color: #fff; font-weight: 600; cursor: pointer; border: none; padding: 14px 12px; }
-.row-eje:hover { filter: brightness(1.3); }
-.toggle-icon { display: inline-block; width: 20px; font-family: monospace; }
+/* Filas de Eje (Las de las LETRAS) */
+.row-eje td { background: var(--eje-bg) !important; color: #fff !important; font-weight: 600; cursor: pointer; padding: 14px 12px; border-bottom: 2px solid #000; }
+.row-eje:hover { background: #333 !important; }
+.toggle-icon { display: inline-block; width: 20px; font-family: monospace; font-size: 1.1rem; }
 
-.td-concepto { background: #f9f9f7; font-weight: 600; width: 180px; }
-.row-principio td { background: #f0f0f0; font-weight: 700; border-top: 2px solid #333; }
+.td-concepto { background: #f9f9f7; font-weight: 600; width: 200px; }
+.row-principio td { background: #f2f2f0; font-weight: 700; border-top: 2px solid #444; }
 .na-cell { color: #bbb; font-style: italic; text-align: center; }
 
 #loading { padding: 2rem; text-align: center; font-style: italic; }
@@ -55,13 +51,13 @@ thead th { background: #fdfdfd; font-weight: 600; text-align: center; }
 </header>
 
 <div class="controls">
-  <span class="group-label">AUTORES:</span>
-  <button class="btn active" data-auth="PLATÓN" onclick="toggleAutor('PLATÓN', this)">Platón</button>
-  <button class="btn active" data-auth="TOMÁS DE AQUINO" onclick="toggleAutor('TOMÁS DE AQUINO', this)">T. Aquino</button>
-  <button class="btn active" data-auth="DESCARTES" onclick="toggleAutor('DESCARTES', this)">Descartes</button>
-  <button class="btn active" data-auth="LOCKE" onclick="toggleAutor('LOCKE', this)">Locke</button>
-  <button class="btn active" data-auth="MARX" onclick="toggleAutor('MARX', this)">Marx</button>
-  <button class="btn active" data-auth="ARENDT" onclick="toggleAutor('ARENDT', this)">Arendt</button>
+  <span class="group-label">VER AUTORES:</span>
+  <button class="btn active" onclick="toggleAutor('PLATÓN', this)">Platón</button>
+  <button class="btn active" onclick="toggleAutor('TOMÁS DE AQUINO', this)">T. Aquino</button>
+  <button class="btn active" onclick="toggleAutor('DESCARTES', this)">Descartes</button>
+  <button class="btn active" onclick="toggleAutor('LOCKE', this)">Locke</button>
+  <button class="btn active" onclick="toggleAutor('MARX', this)">Marx</button>
+  <button class="btn active" onclick="toggleAutor('ARENDT', this)">Arendt</button>
   
   <span class="group-label" style="margin-left:15px">BLOQUES:</span>
   <button class="btn btn-action" onclick="expandAll()">Expandir todo</button>
@@ -69,7 +65,7 @@ thead th { background: #fdfdfd; font-weight: 600; text-align: center; }
 </div>
 
 <div class="table-wrap">
-  <div id="loading">Conectando con Google Sheets...</div>
+  <div id="loading">Cargando datos desde la nube...</div>
   <table id="tabla" style="display:none">
     <thead id="thead"></thead>
     <tbody id="tbody"></tbody>
@@ -81,53 +77,48 @@ const SHEET_ID = '1XK6qxbjGrQYjW8nvlmxONOSekHCz38Y6MEHmbD_m5JU';
 const URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Tabla%20comparativa`;
 
 const AUTORES = [
-  { name: 'PLATÓN', epoca: 'antigua', cls: 'th-antigua' },
-  { name: 'TOMÁS DE AQUINO', epoca: 'medieval', cls: 'th-medieval' },
-  { name: 'DESCARTES', epoca: 'moderna', cls: 'th-moderna' },
-  { name: 'LOCKE', epoca: 'moderna', cls: 'th-moderna' },
-  { name: 'MARX', epoca: 'contemp', cls: 'th-contemp' },
-  { name: 'ARENDT', epoca: 'contemp', cls: 'th-contemp' }
+  { name: 'PLATÓN', epoca: 'antigua' },
+  { name: 'TOMÁS DE AQUINO', epoca: 'medieval' },
+  { name: 'DESCARTES', epoca: 'moderna' },
+  { name: 'LOCKE', epoca: 'moderna' },
+  { name: 'MARX', epoca: 'contemp' },
+  { name: 'ARENDT', epoca: 'contemp' }
 ];
 
-let visibleAutores = new Set(AUTORES.map(a => a.name));
-let ejeGroups = {}; // Almacena las filas hijas de cada eje
-
-function parseGviz(raw) {
-  const json = JSON.parse(raw.replace(/^[^(]+\(/, '').replace(/\);?\s*$/, ''));
-  return json.table.rows;
-}
+let autoresVisibles = new Set(AUTORES.map(a => a.name));
+let bloques = {}; // Guardará las filas hijas de cada eje
 
 function detectType(cells) {
   const first = (cells[0] || '').trim();
   if (!first) return 'empty';
+  // Revisamos si el resto de columnas de autores están vacías
   const restEmpty = cells.slice(1).every(c => !c || c.trim() === '' || c === 'null');
-  // Es un EJE si empieza por Letra (A, B, C...) o ★ y lo demás está vacío
+  
+  // Es un EJE si empieza por Letra o Estrella y los autores están vacíos
   if (restEmpty && (first.match(/^[A-Z]/i) || first.startsWith('★'))) return 'eje';
   if (first.startsWith('★')) return 'principio';
   return 'data';
 }
 
-function buildTable(rows) {
+function buildTable(data) {
+  const rows = data.table.rows;
   const thead = document.getElementById('thead');
   const tbody = document.getElementById('tbody');
 
-  // 1. CONSTRUIR CABECERA
+  // CABECERA
   let h1 = '<tr><th rowspan="2">EJE / CONCEPTO</th>';
-  h1 += `<th colspan="1" class="th-epoca th-antigua" data-ep="antigua">ANTIGUA</th>
-         <th colspan="1" class="th-epoca th-medieval" data-ep="medieval">MEDIEVAL</th>
-         <th colspan="2" class="th-epoca th-moderna" data-ep="moderna">MODERNA</th>
-         <th colspan="2" class="th-epoca th-contemp" data-ep="contemp">CONTEMPORÁNEA</th></tr>`;
-  
+  h1 += `<th colspan="1" class="th-epoca" data-ep="antigua" style="background:var(--antigua)">ANTIGUA</th>
+         <th colspan="1" class="th-epoca" data-ep="medieval" style="background:var(--medieval)">MEDIEVAL</th>
+         <th colspan="2" class="th-epoca" data-ep="moderna" style="background:var(--moderna)">MODERNA</th>
+         <th colspan="2" class="th-epoca" data-ep="contemp" style="background:var(--contemp)">CONTEMPORÁNEA</th></tr>`;
   let h2 = '<tr>';
-  AUTORES.forEach(a => {
-    h2 += `<th data-auth="${a.name}" class="${a.cls}">${a.name}</th>`;
-  });
+  AUTORES.forEach(a => { h2 += `<th data-auth="${a.name}">${a.name}</th>`; });
   h2 += '</tr>';
   thead.innerHTML = h1 + h2;
 
-  // 2. CONSTRUIR CUERPO
+  // CUERPO
   let currentEjeId = null;
-  let ejeCounter = 0;
+  let counter = 0;
 
   rows.forEach(r => {
     const cells = r.c ? r.c.map(v => v ? String(v.v) : '') : [];
@@ -137,19 +128,18 @@ function buildTable(rows) {
     const tr = document.createElement('tr');
 
     if (type === 'eje') {
-      ejeCounter++;
-      currentEjeId = 'eje-' + ejeCounter;
-      ejeGroups[currentEjeId] = []; // Inicializar grupo de filas
+      counter++;
+      currentEjeId = 'bloque-' + counter;
+      bloques[currentEjeId] = { main: tr, children: [], expanded: true };
       
       tr.className = 'row-eje';
-      tr.id = currentEjeId;
-      tr.dataset.expanded = "true";
-      tr.innerHTML = `<td colspan="7"><span class="toggle-icon">▼</span> ${cells[0]}</td>`;
+      tr.innerHTML = `<td colspan="${AUTORES.length + 1}"><span class="toggle-icon">▼</span> ${cells[0]}</td>`;
+      // El clic ahora llama a una función que usa el ID único
       tr.onclick = () => toggleEje(currentEjeId);
       tbody.appendChild(tr);
     } else {
       tr.className = type === 'principio' ? 'row-principio' : 'row-data';
-      let html = `<td class="td-concepto">${cells[0] || ''}</td>`;
+      let html = `<td class="td-concepto">${cells[0]}</td>`;
       AUTORES.forEach((a, idx) => {
         const val = cells[idx + 1] || '—';
         const isNA = val === '—' || val === 'null' || val === '';
@@ -157,9 +147,7 @@ function buildTable(rows) {
       });
       tr.innerHTML = html;
       tbody.appendChild(tr);
-      
-      // Registrar esta fila como hija del eje actual
-      if (currentEjeId) ejeGroups[currentEjeId].push(tr);
+      if (currentEjeId) bloques[currentEjeId].children.push(tr);
     }
   });
 
@@ -167,61 +155,57 @@ function buildTable(rows) {
   document.getElementById('tabla').style.display = 'table';
 }
 
-// Lógica de Plegado de Ejes
+// 1. PLEGADO INDIVIDUAL CORREGIDO
 function toggleEje(id) {
-  const mainRow = document.getElementById(id);
-  const isExpanded = mainRow.dataset.expanded === "true";
-  const newState = !isExpanded;
-  
-  mainRow.dataset.expanded = newState;
-  mainRow.querySelector('.toggle-icon').textContent = newState ? '▼' : '▶';
-  
-  ejeGroups[id].forEach(row => {
-    row.style.display = newState ? '' : 'none';
+  const b = bloques[id];
+  b.expanded = !b.expanded;
+  b.main.querySelector('.toggle-icon').textContent = b.expanded ? '▼' : '▶';
+  b.children.forEach(row => {
+    row.style.display = b.expanded ? '' : 'none';
   });
 }
 
+// 2. EXPANDIR TODO CORREGIDO
 function expandAll() {
-  Object.keys(ejeGroups).forEach(id => {
-    const row = document.getElementById(id);
-    if (row.dataset.expanded === "false") toggleEje(id);
-  });
+  for (let id in bloques) {
+    if (!bloques[id].expanded) toggleEje(id);
+  }
 }
 
 function collapseAll() {
-  Object.keys(ejeGroups).forEach(id => {
-    const row = document.getElementById(id);
-    if (row.dataset.expanded === "true") toggleEje(id);
-  });
+  for (let id in bloques) {
+    if (bloques[id].expanded) toggleEje(id);
+  }
 }
 
-// Lógica de Visibilidad de Autores
-function toggleAutor(name, btn) {
-  if (visibleAutores.has(name)) {
-    if (visibleAutores.size === 1) return;
-    visibleAutores.delete(name);
+// 3. VISIBILIDAD DE AUTORES (BOTONES QUE NO DESAPARECEN)
+function toggleAutor(nombre, btn) {
+  if (autoresVisibles.has(nombre)) {
+    if (autoresVisibles.size === 1) return;
+    autoresVisibles.delete(nombre);
     btn.classList.remove('active');
   } else {
-    visibleAutores.add(name);
+    autoresVisibles.add(nombre);
     btn.classList.add('active');
   }
   applyVisibility();
 }
 
 function applyVisibility() {
-  // 1. Ocultar/Mostrar columnas de autores
+  // Ocultar columnas: Solo afectamos a TD y TH (nunca a los BUTTON)
   AUTORES.forEach(a => {
-    const show = visibleAutores.has(a.name);
-    document.querySelectorAll(`[data-auth="${a.name}"]`).forEach(el => {
-      el.style.display = show ? '' : 'none';
+    const visible = autoresVisibles.has(a.name);
+    // Selector específico para la tabla para no tocar los botones de arriba
+    document.querySelectorAll(`th[data-auth="${a.name}"], td[data-auth="${a.name}"]`).forEach(el => {
+      el.style.display = visible ? '' : 'none';
     });
   });
 
-  // 2. Ajustar colspans de Épocas (Cabecera fila 1)
+  // Ajustar cabeceras de Época
   const epocas = ['antigua', 'medieval', 'moderna', 'contemp'];
   epocas.forEach(ep => {
-    const count = AUTORES.filter(a => a.epoca === ep && visibleAutores.has(a.name)).length;
     const th = document.querySelector(`.th-epoca[data-ep="${ep}"]`);
+    const count = AUTORES.filter(a => a.epoca === ep && autoresVisibles.has(a.name)).length;
     if (count === 0) {
       th.style.display = 'none';
     } else {
@@ -230,15 +214,17 @@ function applyVisibility() {
     }
   });
 
-  // 3. Ajustar colspan de filas de Eje (las negras)
-  const totalVisible = 1 + visibleAutores.size; // Concepto + Autores activos
+  // Ajustar el colspan de las filas negras (Ejes)
+  const totalCols = 1 + autoresVisibles.size;
   document.querySelectorAll('.row-eje td').forEach(td => {
-    td.colSpan = totalVisible;
+    td.colSpan = totalCols;
   });
 }
 
-fetch(URL).then(r => r.text()).then(raw => buildTable(parseGviz(raw)));
+fetch(URL).then(r => r.text()).then(raw => {
+  const data = JSON.parse(raw.replace(/^[^(]+\(/, '').replace(/\);?\s*$/, ''));
+  buildTable(data);
+});
 </script>
-
 </body>
 </html>
