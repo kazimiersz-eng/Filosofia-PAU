@@ -306,7 +306,6 @@ footer {
 const SHEET_ID = '1XK6qxbjGrQYjW8nvlmxONOSekHCz38Y6MEHmbD_m5JU';
 const URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Tabla%20comparativa`;
 
-// Configuración de columnas: índice en el sheet → época y clase CSS
 const COLS = [
   { idx: 0, label: 'EJE / CONCEPTO', epoca: 'concepto',  thEpoca: '',                  thAutor: '',              bgClass: '',          princClass: 'td-concepto-princ' },
   { idx: 1, label: 'PLATÓN',         epoca: 'antigua',   thEpoca: 'th-bg-antigua',     thAutor: 'th-bg-antigua', bgClass: 'bg-antigua', princClass: 'princ-antigua' },
@@ -325,9 +324,9 @@ const EPOCAS_LABELS = {
 };
 
 let currentEpocas = new Set(['antigua','medieval','moderna','contemp']);
-let ejeGroups = {}; // ejeId → [row elements]
-let ejeRows   = {}; // ejeId → header row element
-let ejeState  = {}; // ejeId → expanded bool
+let ejeGroups = {}; 
+let ejeRows   = {}; 
+let ejeState  = {}; 
 
 function parseGvizJson(raw) {
   const json = raw.replace(/^[^(]+\(/, '').replace(/\);?\s*$/, '');
@@ -337,9 +336,9 @@ function parseGvizJson(raw) {
 function detectRowType(cells) {
   const first = (cells[0] || '').trim();
   if (!first) return 'empty';
-  // Eje: todas las demás celdas vacías
-  const rest = cells.slice(1).every(c => !c || c.trim() === '');
-  if (rest && first.match(/^[A-Z★]/)) return 'eje';
+  // Es un Eje si tiene texto y el resto de celdas de autores están vacías
+  const restEmpty = cells.slice(1).every(c => !c || c.trim() === '');
+  if (restEmpty && first.length > 1) return 'eje'; 
   if (first.startsWith('★')) return 'principio';
   return 'data';
 }
@@ -348,17 +347,16 @@ function buildTable(data) {
   const rows = data.table.rows;
   const thead = document.getElementById('thead');
   const tbody = document.getElementById('tbody');
+  thead.innerHTML = '';
+  tbody.innerHTML = '';
 
-  // ── CABECERA ──────────────────────────────────────────────────────────
-  // Fila 1: épocas (merged)
+  // CABECERA
   const tr1 = document.createElement('tr');
-  // celda vacía para col concepto
   const thEmpty = document.createElement('th');
   thEmpty.className = 'th-epoca col-concepto';
   thEmpty.rowSpan = 2;
   tr1.appendChild(thEmpty);
 
-  // agrupamos columnas por época para el colspan
   const epocaGroups = [];
   let prev = null;
   for (const col of COLS.slice(1)) {
@@ -380,26 +378,24 @@ function buildTable(data) {
   }
   thead.appendChild(tr1);
 
-  // Fila 2: autores
   const tr2 = document.createElement('tr');
   for (const col of COLS.slice(1)) {
     const th = document.createElement('th');
     th.className = `th-autor col-autor ${col.thAutor}`;
     th.textContent = col.label;
     th.dataset.epoca = col.epoca;
-    th.dataset.colidx = col.idx;
     tr2.appendChild(th);
   }
   thead.appendChild(tr2);
 
-  // ── CUERPO ────────────────────────────────────────────────────────────
-  let currentEje = null;
+  // CUERPO
+  let currentEjeId = null;
   let ejeCounter = 0;
 
   for (const row of rows) {
     const cells = COLS.map(col => {
       const c = row.c[col.idx];
-      return (c && c.v !== null && c.v !== undefined) ? String(c.v) : '';
+      return (c && c.v !== null) ? String(c.v) : '';
     });
 
     const type = detectRowType(cells);
@@ -407,70 +403,45 @@ function buildTable(data) {
 
     if (type === 'eje') {
       ejeCounter++;
-      currentEje = 'eje' + ejeCounter;
-      ejeGroups[currentEje] = [];
-      ejeState[currentEje] = true;
+      currentEjeId = 'eje' + ejeCounter;
+      ejeGroups[currentEjeId] = [];
+      ejeState[currentEjeId] = true;
 
       const tr = document.createElement('tr');
       tr.className = 'row-eje';
-      tr.dataset.eje = currentEje;
-      tr.onclick = () => toggleEje(currentEje);
+      tr.dataset.eje = currentEjeId;
+      tr.onclick = () => toggleEje(currentEjeId);
 
       const td = document.createElement('td');
       td.colSpan = COLS.length;
       td.innerHTML = `<span class="toggle-icon">▼</span>${cells[0]}`;
       tr.appendChild(td);
       tbody.appendChild(tr);
-      ejeRows[currentEje] = tr;
-
-    } else if (type === 'principio') {
-      const tr = document.createElement('tr');
-      tr.className = 'row-principio';
-      if (currentEje) {
-        tr.dataset.parentEje = currentEje;
-        ejeGroups[currentEje].push(tr);
-      }
-
-      for (const col of COLS) {
-        const td = document.createElement('td');
-        td.dataset.epoca = col.epoca;
-        td.dataset.colidx = col.idx;
-        const val = cells[col.idx];
-        if (col.idx === 0) {
-          td.className = col.princClass;
-          td.textContent = val || '★ PRINCIPIO FUNDAMENTAL';
-        } else {
-          td.className = col.princClass;
-          td.textContent = val;
-        }
-        tr.appendChild(td);
-      }
-      tbody.appendChild(tr);
-
+      ejeRows[currentEjeId] = tr;
     } else {
       const tr = document.createElement('tr');
-      tr.className = 'row-data';
-      if (currentEje) {
-        tr.dataset.parentEje = currentEje;
-        ejeGroups[currentEje].push(tr);
+      tr.className = (type === 'principio') ? 'row-principio' : 'row-data';
+      if (currentEjeId) {
+        tr.dataset.parentEje = currentEjeId;
+        ejeGroups[currentEjeId].push(tr);
       }
 
       for (const col of COLS) {
         const td = document.createElement('td');
         td.dataset.epoca = col.epoca;
-        td.dataset.colidx = col.idx;
         const val = cells[col.idx];
-        const isNA = (val === '—' || val === '-' || val === '');
-
+        
         if (col.idx === 0) {
-          td.className = 'td-concepto';
-          td.textContent = val;
-        } else if (isNA) {
-          td.className = `${col.bgClass} na-cell`;
-          td.textContent = val || '—';
+          td.className = (type === 'principio') ? col.princClass : 'td-concepto';
+          td.textContent = val || (type === 'principio' ? '★ PRINCIPIO' : '');
         } else {
-          td.className = col.bgClass;
-          td.textContent = val;
+          td.className = (type === 'principio') ? col.princClass : col.bgClass;
+          if (val === '—' || val === '-' || val === '') {
+            td.classList.add('na-cell');
+            td.textContent = '—';
+          } else {
+            td.textContent = val;
+          }
         }
         tr.appendChild(td);
       }
@@ -483,33 +454,43 @@ function buildTable(data) {
   applyVisibility();
 }
 
-// ── PLIEGUE DE EJES ───────────────────────────────────────────────────────
 function toggleEje(ejeId) {
   ejeState[ejeId] = !ejeState[ejeId];
-  const expanded = ejeState[ejeId];
-  ejeRows[ejeId].classList.toggle('collapsed', !expanded);
-  for (const row of (ejeGroups[ejeId] || [])) {
-    row.style.display = expanded ? '' : 'none';
-  }
+  updateEjeUI(ejeId);
+}
+
+function updateEjeUI(ejeId) {
+  const isExpanded = ejeState[ejeId];
+  const mainRow = ejeRows[ejeId];
+  const childRows = ejeGroups[ejeId] || [];
+
+  mainRow.classList.toggle('collapsed', !isExpanded);
+  const icon = mainRow.querySelector('.toggle-icon');
+  if (icon) icon.textContent = isExpanded ? '▼' : '▶';
+
+  childRows.forEach(row => {
+    row.style.display = isExpanded ? '' : 'none';
+  });
 }
 
 function expandAll() {
-  for (const ejeId of Object.keys(ejeState)) {
-    if (!ejeState[ejeId]) toggleEje(ejeId);
-  }
+  Object.keys(ejeState).forEach(id => {
+    ejeState[id] = true;
+    updateEjeUI(id);
+  });
 }
 
 function collapseAll() {
-  for (const ejeId of Object.keys(ejeState)) {
-    if (ejeState[ejeId]) toggleEje(ejeId);
-  }
+  Object.keys(ejeState).forEach(id => {
+    ejeState[id] = false;
+    updateEjeUI(id);
+  });
 }
 
-// ── TOGGLE ÉPOCAS ─────────────────────────────────────────────────────────
 function toggleEpoca(btn) {
   const epoca = btn.dataset.epoca;
   if (currentEpocas.has(epoca)) {
-    if (currentEpocas.size === 1) return; // no dejar sin ninguna
+    if (currentEpocas.size === 1) return;
     currentEpocas.delete(epoca);
     btn.classList.remove('active');
   } else {
@@ -520,16 +501,35 @@ function toggleEpoca(btn) {
 }
 
 function applyVisibility() {
-  // Columnas thead
-  document.querySelectorAll('[data-epoca]').forEach(el => {
-    const e = el.dataset.epoca;
-    if (!e || e === 'concepto') return;
-    const hidden = !currentEpocas.has(e);
-    el.classList.toggle('col-hidden', hidden);
+  // Ocultar/Mostrar celdas de datos y autores según época
+  document.querySelectorAll('th[data-epoca], td[data-epoca]').forEach(el => {
+    const ep = el.dataset.epoca;
+    if (ep && ep !== 'concepto') {
+      const isVisible = currentEpocas.has(ep);
+      el.style.display = isVisible ? '' : 'none';
+    }
+  });
+
+  // Ajustar el colspan de las cabeceras de Época (FILA 1)
+  document.querySelectorAll('.th-epoca[data-epoca]').forEach(th => {
+    const ep = th.dataset.epoca;
+    if (currentEpocas.has(ep)) {
+      th.style.display = '';
+      // Contar cuántas sub-columnas de esta época hay en COLS
+      const count = COLS.filter(c => c.epoca === ep).length;
+      th.colSpan = count;
+    } else {
+      th.style.display = 'none';
+    }
+  });
+  
+  // Ajustar el colspan de las filas de Eje para que no se rompan al ocultar columnas
+  const visibleCols = COLS.filter(c => c.epoca === 'concepto' || currentEpocas.has(c.epoca)).length;
+  document.querySelectorAll('.row-eje td').forEach(td => {
+    td.colSpan = visibleCols;
   });
 }
 
-// ── CARGA DE DATOS ────────────────────────────────────────────────────────
 fetch(URL)
   .then(r => r.text())
   .then(raw => {
@@ -540,7 +540,7 @@ fetch(URL)
     document.getElementById('loading').style.display = 'none';
     const em = document.getElementById('error-msg');
     em.style.display = 'block';
-    em.textContent = `No se han podido cargar los datos. Asegúrate de que la hoja de Google Sheets es pública. Error: ${err.message}`;
+    em.textContent = `Error: ${err.message}`;
   });
 </script>
 </body>
