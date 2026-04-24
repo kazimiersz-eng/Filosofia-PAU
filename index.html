@@ -1,191 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tabla comparativa · Historia de la Filosofía PAU</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --antigua:    #CCC5F0; --antigua-c:  #EEEAFC; --antigua-t:  #2D1F6E;
+  --medieval:   #9FD9C0; --medieval-c: #E0F5EC; --medieval-t: #0A4A35;
+  --moderna:    #F5C97A; --moderna-c:  #FDF3DC; --moderna-t:  #5A3200;
+  --marx-c:     #FDEAEA; --arendt-c:   #FDE8F0;
+  --contemp:    #F0A0A0; --contemp-t:  #6B1A1A;
+  --eje-bg:     #3A3A3A; --concepto-bg:#F4F4F2; --princip-bg: #2C2C2A;
+  --border:     #CCCCCC; --page-bg:    #F7F5F0;
+}
+
+body { font-family: 'Source Sans 3', sans-serif; background: var(--page-bg); margin: 0; }
+header { padding: 2rem; background: #fff; border-bottom: 1px solid var(--border); }
+header h1 { font-family: 'Playfair Display', serif; margin: 0; font-size: 1.5rem; }
+
+.controls { display: flex; flex-wrap: wrap; gap: 1rem; padding: 1rem 2rem; background: #fff; border-bottom: 1px solid var(--border); align-items: center; }
+.btn { padding: 0.4rem 0.8rem; border: 1px solid var(--border); border-radius: 4px; background: #fff; cursor: pointer; font-size: 0.8rem; }
+.btn.active { background: #eee; font-weight: 600; border-color: #666; }
+.btn-epoca { border-left: 4px solid #ccc; }
+.btn-antigua.active  { border-left-color: var(--antigua-t); }
+.btn-medieval.active { border-left-color: var(--medieval-t); }
+.btn-moderna.active  { border-left-color: var(--moderna-t); }
+.btn-contemp.active  { border-left-color: var(--contemp-t); }
+
+.table-wrap { padding: 2rem; overflow-x: auto; }
+table { border-collapse: collapse; min-width: 900px; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 100%; }
+th, td { border: 1px solid var(--border); padding: 10px; font-size: 0.85rem; vertical-align: top; }
+
+/* Filas de Eje (Las de las Letras) */
+.row-eje td { background: var(--eje-bg); color: #fff; font-weight: 600; cursor: pointer; text-transform: uppercase; letter-spacing: 0.05em; }
+.row-eje.collapsed .toggle-icon { transform: rotate(-90deg); }
+.toggle-icon { display: inline-block; margin-right: 8px; transition: transform 0.2s; }
+
+.td-concepto { background: var(--concepto-bg); font-weight: 600; width: 150px; }
+.row-principio td { background: #f9f9f9; font-weight: 600; border-top: 2px solid #333; }
+
+/* Colores de fondo por autor */
+.bg-antigua { background: var(--antigua-c); }
+.bg-medieval { background: var(--medieval-c); }
+.bg-moderna { background: var(--moderna-c); }
+.bg-marx { background: var(--marx-c); }
+.bg-arendt { background: var(--arendt-c); }
+.na-cell { color: #aaa; font-style: italic; }
+
+footer { padding: 1rem; text-align: center; font-size: 0.7rem; color: #999; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Tabla comparativa · Historia de la Filosofía</h1>
+</header>
+
+<div class="controls">
+  <strong>Épocas:</strong>
+  <button class="btn btn-epoca btn-antigua active" onclick="toggleEpoca('antigua', this)">Antigua</button>
+  <button class="btn btn-epoca btn-medieval active" onclick="toggleEpoca('medieval', this)">Medieval</button>
+  <button class="btn btn-epoca btn-moderna active" onclick="toggleEpoca('moderna', this)">Moderna</button>
+  <button class="btn btn-epoca btn-contemp active" onclick="toggleEpoca('contemp', this)">Contemporánea</button>
+  <span style="margin-left: 20px;"><strong>Bloques:</strong></span>
+  <button class="btn" onclick="expandAll()">Expandir todo</button>
+  <button class="btn" onclick="collapseAll()">Plegar todo</button>
+</div>
+
+<div class="table-wrap">
+  <div id="loading">Cargando datos...</div>
+  <table id="tabla" style="display:none">
+    <thead id="thead"></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+
 <script>
 const SHEET_ID = '1XK6qxbjGrQYjW8nvlmxONOSekHCz38Y6MEHmbD_m5JU';
 const URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Tabla%20comparativa`;
 
 const COLS = [
-  { idx: 0, label: 'EJE / CONCEPTO', epoca: 'concepto',  thEpoca: '',                  thAutor: '',              bgClass: '',          princClass: 'td-concepto-princ' },
-  { idx: 1, label: 'PLATÓN',         epoca: 'antigua',   thEpoca: 'th-bg-antigua',     thAutor: 'th-bg-antigua', bgClass: 'bg-antigua', princClass: 'princ-antigua' },
-  { idx: 2, label: 'TOMÁS DE AQUINO',epoca: 'medieval',  thEpoca: 'th-bg-medieval',    thAutor: 'th-bg-medieval',bgClass: 'bg-medieval',princClass: 'princ-medieval' },
-  { idx: 3, label: 'DESCARTES',      epoca: 'moderna',   thEpoca: 'th-bg-moderna',     thAutor: 'th-bg-moderna', bgClass: 'bg-moderna', princClass: 'princ-moderna' },
-  { idx: 4, label: 'LOCKE',          epoca: 'moderna',   thEpoca: 'th-bg-moderna',     thAutor: 'th-bg-moderna', bgClass: 'bg-moderna', princClass: 'princ-moderna' },
-  { idx: 5, label: 'MARX',           epoca: 'contemp',   thEpoca: 'th-bg-contemp',     thAutor: 'th-bg-contemp', bgClass: 'bg-marx',    princClass: 'princ-contemp' },
-  { idx: 6, label: 'ARENDT',         epoca: 'contemp',   thEpoca: 'th-bg-contemp',     thAutor: 'th-bg-contemp', bgClass: 'bg-arendt',  princClass: 'princ-contemp' },
+  { idx: 0, label: 'CONCEPTO', epoca: 'concepto' },
+  { idx: 1, label: 'PLATÓN', epoca: 'antigua', bg: 'bg-antigua' },
+  { idx: 2, label: 'TOMÁS DE AQUINO', epoca: 'medieval', bg: 'bg-medieval' },
+  { idx: 3, label: 'DESCARTES', epoca: 'moderna', bg: 'bg-moderna' },
+  { idx: 4, label: 'LOCKE', epoca: 'moderna', bg: 'bg-moderna' },
+  { idx: 5, label: 'MARX', epoca: 'contemp', bg: 'bg-marx' },
+  { idx: 6, label: 'ARENDT', epoca: 'contemp', bg: 'bg-arendt' }
 ];
 
-const EPOCAS_LABELS = {
-  antigua:  'ANTIGUA',
-  medieval: 'MEDIEVAL',
-  moderna:  'MODERNA',
-  contemp:  'CONTEMPORÁNEA',
-};
-
-let currentEpocas = new Set(['antigua','medieval','moderna','contemp']);
+let currentEpocas = new Set(['antigua', 'medieval', 'moderna', 'contemp']);
 let ejeGroups = {}; 
-let ejeRows   = {}; 
-let ejeState  = {}; 
+let ejeState = {}; 
 
-function parseGvizJson(raw) {
-  const json = raw.replace(/^[^(]+\(/, '').replace(/\);?\s*$/, '');
-  return JSON.parse(json);
-}
-
-// CORRECCIÓN: Detecta ejes si empiezan por Letra o Estrella y el resto está vacío
 function detectRowType(cells) {
   const first = (cells[0] || '').trim();
   if (!first) return 'empty';
   const restEmpty = cells.slice(1).every(c => !c || c.trim() === '');
-  if (restEmpty && (first.match(/^[A-Z]/i) || first.startsWith('★'))) return 'eje'; 
+  // CLAVE: Si empieza por letra (A, B, C...) o estrella y lo demás está vacío, es un EJE
+  if (restEmpty && (first.match(/^[A-Z]/i) || first.startsWith('★'))) return 'eje';
   if (first.startsWith('★')) return 'principio';
   return 'data';
 }
 
 function buildTable(data) {
   const rows = data.table.rows;
-  const thead = document.getElementById('thead');
   const tbody = document.getElementById('tbody');
-  thead.innerHTML = '';
-  tbody.innerHTML = '';
+  const thead = document.getElementById('thead');
+  
+  // Crear cabecera de autores
+  let headHtml = '<tr><th rowspan="2">CONCEPTO</th>';
+  // Fila 1: Épocas
+  headHtml += `<th colspan="1" class="th-epoca" data-epoca="antigua">ANTIGUA</th>
+               <th colspan="1" class="th-epoca" data-epoca="medieval">MEDIEVAL</th>
+               <th colspan="2" class="th-epoca" data-epoca="moderna">MODERNA</th>
+               <th colspan="2" class="th-epoca" data-epoca="contemp">CONTEMPORÁNEA</th></tr><tr>`;
+  // Fila 2: Autores
+  COLS.slice(1).forEach(col => {
+    headHtml += `<th class="th-autor" data-epoca="${col.epoca}">${col.label}</th>`;
+  });
+  headHtml += '</tr>';
+  thead.innerHTML = headHtml;
 
-  // CABECERA (Fila épocas y Fila autores)
-  const tr1 = document.createElement('tr');
-  const thEmpty = document.createElement('th');
-  thEmpty.className = 'th-epoca col-concepto';
-  thEmpty.rowSpan = 2;
-  tr1.appendChild(thEmpty);
-
-  const epocaGroups = [];
-  let prev = null;
-  for (const col of COLS.slice(1)) {
-    if (col.epoca !== prev) {
-      epocaGroups.push({ epoca: col.epoca, cols: [col], thClass: col.thEpoca });
-      prev = col.epoca;
-    } else {
-      epocaGroups[epocaGroups.length - 1].cols.push(col);
-    }
-  }
-
-  for (const g of epocaGroups) {
-    const th = document.createElement('th');
-    th.className = `th-epoca ${g.thClass}`;
-    th.colSpan = g.cols.length;
-    th.textContent = EPOCAS_LABELS[g.epoca];
-    th.dataset.epoca = g.epoca; // El CSS ocultará esto, pero el botón no.
-    tr1.appendChild(th);
-  }
-  thead.appendChild(tr1);
-
-  const tr2 = document.createElement('tr');
-  for (const col of COLS.slice(1)) {
-    const th = document.createElement('th');
-    th.className = `th-autor col-autor ${col.thAutor}`;
-    th.textContent = col.label;
-    th.dataset.epoca = col.epoca;
-    tr2.appendChild(th);
-  }
-  thead.appendChild(tr2);
-
-  // CUERPO
   let currentEjeId = null;
-  let ejeCounter = 0;
+  let counter = 0;
 
-  for (const row of rows) {
-    const cells = COLS.map(col => {
-      const c = row.c[col.idx];
-      return (c && c.v !== null) ? String(c.v) : '';
-    });
-
+  rows.forEach(row => {
+    const cells = COLS.map(col => (row.c[col.idx] ? String(row.c[col.idx].v) : ''));
     const type = detectRowType(cells);
-    if (type === 'empty') continue;
 
     if (type === 'eje') {
-      ejeCounter++;
-      currentEjeId = 'eje' + ejeCounter;
+      counter++;
+      currentEjeId = 'eje-' + counter;
       ejeGroups[currentEjeId] = [];
       ejeState[currentEjeId] = true;
 
       const tr = document.createElement('tr');
       tr.className = 'row-eje';
-      tr.dataset.eje = currentEjeId;
-      tr.onclick = () => toggleEje(currentEjeId);
-
-      const td = document.createElement('td');
-      td.colSpan = COLS.length;
-      td.innerHTML = `<span class="toggle-icon">▼</span>${cells[0]}`;
-      tr.appendChild(td);
+      tr.innerHTML = `<td colspan="${COLS.length}"><span class="toggle-icon">▼</span>${cells[0]}</td>`;
+      tr.onclick = () => toggleEje(currentEjeId, tr);
       tbody.appendChild(tr);
-      ejeRows[currentEjeId] = tr;
-    } else {
+      ejeGroups[currentEjeId].rowPrincipal = tr;
+    } else if (type !== 'empty') {
       const tr = document.createElement('tr');
-      tr.className = (type === 'principio') ? 'row-principio' : 'row-data';
-      if (currentEjeId) {
-        tr.dataset.parentEje = currentEjeId;
-        ejeGroups[currentEjeId].push(tr);
-      }
-
-      for (const col of COLS) {
-        const td = document.createElement('td');
-        td.dataset.epoca = col.epoca;
-        const val = cells[col.idx];
-        
-        if (col.idx === 0) {
-          td.className = (type === 'principio') ? col.princClass : 'td-concepto';
-          td.textContent = val || (type === 'principio' ? '★ PRINCIPIO' : '');
-        } else {
-          td.className = (type === 'principio') ? col.princClass : col.bgClass;
-          if (val === '—' || val === '-' || val === '') {
-            td.classList.add('na-cell');
-            td.textContent = '—';
-          } else {
-            td.textContent = val;
-          }
-        }
-        tr.appendChild(td);
-      }
+      tr.className = type === 'principio' ? 'row-principio' : 'row-data';
+      
+      let rowHtml = `<td class="td-concepto">${cells[0]}</td>`;
+      COLS.slice(1).forEach((col, i) => {
+        const val = cells[i+1];
+        const isNA = !val || val === '-' || val === '—';
+        rowHtml += `<td data-epoca="${col.epoca}" class="${col.bg} ${isNA ? 'na-cell' : ''}">${val || '—'}</td>`;
+      });
+      tr.innerHTML = rowHtml;
       tbody.appendChild(tr);
+      if (currentEjeId) ejeGroups[currentEjeId].push(tr);
     }
-  }
+  });
 
   document.getElementById('loading').style.display = 'none';
-  document.getElementById('tabla').style.display = '';
+  document.getElementById('tabla').style.display = 'table';
   applyVisibility();
 }
 
-// Lógica de plegado corregida
-function toggleEje(ejeId) {
-  ejeState[ejeId] = !ejeState[ejeId];
-  updateEjeUI(ejeId);
-}
-
-function updateEjeUI(ejeId) {
-  const isExpanded = ejeState[ejeId];
-  const mainRow = ejeRows[ejeId];
-  const childRows = ejeGroups[ejeId] || [];
-
-  mainRow.classList.toggle('collapsed', !isExpanded);
-  const icon = mainRow.querySelector('.toggle-icon');
-  if (icon) icon.textContent = isExpanded ? '▼' : '▶';
-
-  childRows.forEach(row => {
-    row.style.display = isExpanded ? '' : 'none';
-  });
+function toggleEje(id, el) {
+  ejeState[id] = !ejeState[id];
+  el.classList.toggle('collapsed', !ejeState[id]);
+  el.querySelector('.toggle-icon').textContent = ejeState[id] ? '▼' : '▶';
+  ejeGroups[id].forEach(row => row.style.display = ejeState[id] ? '' : 'none');
 }
 
 function expandAll() {
   Object.keys(ejeState).forEach(id => {
     ejeState[id] = true;
-    updateEjeUI(id);
+    const row = ejeGroups[id].rowPrincipal;
+    row.classList.remove('collapsed');
+    row.querySelector('.toggle-icon').textContent = '▼';
+    ejeGroups[id].forEach(r => r.style.display = '');
   });
 }
 
 function collapseAll() {
   Object.keys(ejeState).forEach(id => {
     ejeState[id] = false;
-    updateEjeUI(id);
+    const row = ejeGroups[id].rowPrincipal;
+    row.classList.add('collapsed');
+    row.querySelector('.toggle-icon').textContent = '▶';
+    ejeGroups[id].forEach(r => r.style.display = 'none');
   });
 }
 
-function toggleEpoca(btn) {
-  const epoca = btn.dataset.epoca;
+function toggleEpoca(epoca, btn) {
   if (currentEpocas.has(epoca)) {
     if (currentEpocas.size === 1) return;
     currentEpocas.delete(epoca);
@@ -197,46 +203,23 @@ function toggleEpoca(btn) {
   applyVisibility();
 }
 
-// CORRECCIÓN CLAVE: Ahora solo oculta celdas de la TABLA, no los botones
 function applyVisibility() {
-  // Seleccionamos solo celdas de cabecera (th) y datos (td)
-  document.querySelectorAll('th[data-epoca], td[data-epoca]').forEach(el => {
-    const ep = el.dataset.epoca;
-    if (ep && ep !== 'concepto') {
-      const isVisible = currentEpocas.has(ep);
-      el.style.display = isVisible ? '' : 'none';
-    }
+  // CLAVE: Solo afectamos a elementos DENTRO de la tabla
+  const cells = document.querySelectorAll('#tabla [data-epoca]');
+  cells.forEach(cell => {
+    const ep = cell.dataset.epoca;
+    cell.style.display = currentEpocas.has(ep) ? '' : 'none';
   });
 
-  // Ajustar colspans de los grupos de épocas
-  document.querySelectorAll('.th-epoca[data-epoca]').forEach(th => {
-    const ep = th.dataset.epoca;
-    if (currentEpocas.has(ep)) {
-      th.style.display = '';
-      const count = COLS.filter(c => c.epoca === ep).length;
-      th.colSpan = count;
-    } else {
-      th.style.display = 'none';
-    }
-  });
-  
-  // Ajustar el ancho de las filas negras (Ejes) para que no se corten
-  const visibleColsCount = COLS.filter(c => c.epoca === 'concepto' || currentEpocas.has(c.epoca)).length;
-  document.querySelectorAll('.row-eje td').forEach(td => {
-    td.colSpan = visibleColsCount;
-  });
+  // Ajustar el colspan de las filas de los Ejes (las negras)
+  const visibleCols = COLS.filter(c => c.epoca === 'concepto' || currentEpocas.has(c.epoca)).length;
+  document.querySelectorAll('.row-eje td').forEach(td => td.colSpan = visibleCols);
 }
 
-fetch(URL)
-  .then(r => r.text())
-  .then(raw => {
-    const data = parseGvizJson(raw);
-    buildTable(data);
-  })
-  .catch(err => {
-    document.getElementById('loading').style.display = 'none';
-    const em = document.getElementById('error-msg');
-    em.style.display = 'block';
-    em.textContent = `Error: ${err.message}`;
-  });
+fetch(URL).then(res => res.text()).then(txt => {
+  const data = JSON.parse(txt.replace(/^[^(]+\(/, '').replace(/\);?\s*$/, ''));
+  buildTable(data);
+});
 </script>
+</body>
+</html>
