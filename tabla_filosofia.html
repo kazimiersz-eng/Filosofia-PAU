@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tabla comparativa · Historia de la Filosofía PAU</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --antigua:    #CCC5F0;
+  --antigua-c:  #EEEAFC;
+  --antigua-t:  #2D1F6E;
+  --medieval:   #9FD9C0;
+  --medieval-c: #E0F5EC;
+  --medieval-t: #0A4A35;
+  --moderna:    #F5C97A;
+  --moderna-c:  #FDF3DC;
+  --moderna-t:  #5A3200;
+  --marx-c:     #FDEAEA;
+  --arendt-c:   #FDE8F0;
+  --contemp:    #F0A0A0;
+  --contemp-t:  #6B1A1A;
+  --eje-bg:     #3A3A3A;
+  --concepto-bg:#F4F4F2;
+  --princip-bg: #2C2C2A;
+  --na:         #AAAAAA;
+  --border:     #CCCCCC;
+  --page-bg:    #F7F5F0;
+  --shadow:     rgba(0,0,0,0.08);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Source Sans 3', sans-serif;
+  font-weight: 300;
+  background: var(--page-bg);
+  color: #222;
+  min-height: 100vh;
+}
+
+header {
+  padding: 2.5rem 2rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: #fff;
+}
+
+header h1 {
+  font-family: 'Playfair Display', serif;
+  font-weight: 500;
+  font-size: 1.5rem;
+  letter-spacing: -0.01em;
+  color: #1a1a1a;
+}
+
+header p {
+  font-size: 0.82rem;
+  color: #888;
+  margin-top: 0.3rem;
+  font-weight: 300;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  padding: 1rem 2rem;
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+}
+
+.controls-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #999;
+  margin-right: 0.25rem;
+}
+
+.btn-group {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.btn {
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 400;
+  padding: 0.3rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: #444;
+  white-space: nowrap;
+}
+
+.btn:hover { background: #f0f0f0; }
+.btn.active { font-weight: 600; color: #111; border-color: #888; background: #f8f8f8; }
+
+.btn-epoca {
+  border-left: 3px solid transparent;
+}
+.btn-antigua  { border-left-color: var(--antigua-t); }
+.btn-medieval { border-left-color: var(--medieval-t); }
+.btn-moderna  { border-left-color: var(--moderna-t); }
+.btn-contemp  { border-left-color: var(--contemp-t); }
+
+.divider { width: 1px; height: 24px; background: #ddd; }
+
+.table-wrap {
+  padding: 1.5rem 2rem 3rem;
+  overflow-x: auto;
+}
+
+#loading {
+  padding: 4rem 2rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #999;
+}
+
+#error-msg {
+  display: none;
+  padding: 2rem;
+  color: #c00;
+  font-size: 0.9rem;
+}
+
+table {
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  min-width: 900px;
+  background: #fff;
+  box-shadow: 0 2px 12px var(--shadow);
+}
+
+/* columnas */
+.col-concepto { width: 160px; min-width: 140px; }
+.col-autor    { width: 195px; min-width: 160px; }
+
+/* cabecera épocas */
+.th-epoca {
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 6px 10px 4px;
+  text-align: center;
+  border: 1px solid var(--border);
+}
+
+/* cabecera autores */
+.th-autor {
+  font-family: 'Playfair Display', serif;
+  font-size: 0.88rem;
+  font-weight: 500;
+  padding: 6px 10px 8px;
+  text-align: center;
+  border: 1px solid var(--border);
+}
+
+/* filas eje */
+.row-eje td {
+  background: var(--eje-bg);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 5px 10px;
+  border: 1px solid #555;
+  cursor: pointer;
+  user-select: none;
+}
+
+.row-eje td .toggle-icon {
+  display: inline-block;
+  margin-right: 6px;
+  font-style: normal;
+  transition: transform 0.2s;
+  font-size: 0.65rem;
+  opacity: 0.7;
+}
+
+.row-eje.collapsed .toggle-icon { transform: rotate(-90deg); }
+
+/* filas concepto */
+.row-data td {
+  vertical-align: top;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  transition: background 0.1s;
+}
+
+.row-data td.td-concepto {
+  background: var(--concepto-bg);
+  font-weight: 600;
+  font-size: 0.75rem;
+  color: #444;
+  white-space: nowrap;
+}
+
+/* fila principio */
+.row-principio td {
+  font-weight: 600;
+  font-size: 0.78rem;
+  padding: 9px 10px;
+  border-top: 2px solid #444;
+  border-bottom: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  text-align: center;
+}
+
+.td-concepto-princ {
+  background: var(--princip-bg) !important;
+  color: #fff !important;
+  text-align: left !important;
+  font-size: 0.7rem !important;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* colores épocas */
+.bg-antigua   { background: var(--antigua-c); }
+.bg-medieval  { background: var(--medieval-c); }
+.bg-moderna   { background: var(--moderna-c); }
+.bg-marx      { background: var(--marx-c); }
+.bg-arendt    { background: var(--arendt-c); }
+
+.th-bg-antigua  { background: var(--antigua);  color: var(--antigua-t); }
+.th-bg-medieval { background: var(--medieval); color: var(--medieval-t); }
+.th-bg-moderna  { background: var(--moderna);  color: var(--moderna-t); }
+.th-bg-contemp  { background: var(--contemp);  color: var(--contemp-t); }
+
+.princ-antigua  { background: var(--antigua);  color: var(--antigua-t); }
+.princ-medieval { background: var(--medieval); color: var(--medieval-t); }
+.princ-moderna  { background: var(--moderna);  color: var(--moderna-t); }
+.princ-contemp  { background: var(--contemp);  color: var(--contemp-t); }
+
+/* celda NA */
+.na-cell { color: var(--na); font-style: italic; font-size: 0.75rem; }
+
+/* ocultar */
+.col-hidden { display: none; }
+.row-hidden { display: none; }
+
+/* hover en filas */
+.row-data:hover td { filter: brightness(0.96); }
+
+/* footer */
+footer {
+  padding: 1rem 2rem;
+  font-size: 0.72rem;
+  color: #bbb;
+  text-align: center;
+  border-top: 1px solid #eee;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Tabla comparativa · Historia de la Filosofía</h1>
+  <p>PAU Cantabria · Los datos se cargan desde Google Sheets y se actualizan automáticamente</p>
+</header>
+
+<div class="controls">
+  <span class="controls-label">Épocas</span>
+  <div class="btn-group" id="btn-epocas">
+    <button class="btn btn-epoca btn-antigua  active" data-epoca="antigua"  onclick="toggleEpoca(this)">Antigua</button>
+    <button class="btn btn-epoca btn-medieval active" data-epoca="medieval" onclick="toggleEpoca(this)">Medieval</button>
+    <button class="btn btn-epoca btn-moderna  active" data-epoca="moderna"  onclick="toggleEpoca(this)">Moderna</button>
+    <button class="btn btn-epoca btn-contemp  active" data-epoca="contemp"  onclick="toggleEpoca(this)">Contemporánea</button>
+  </div>
+  <div class="divider"></div>
+  <span class="controls-label">Bloques</span>
+  <div class="btn-group">
+    <button class="btn" onclick="expandAll()">Expandir todo</button>
+    <button class="btn" onclick="collapseAll()">Plegar todo</button>
+  </div>
+</div>
+
+<div class="table-wrap">
+  <div id="loading">Cargando datos desde Google Sheets…</div>
+  <div id="error-msg"></div>
+  <table id="tabla" style="display:none">
+    <thead id="thead"></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+
+<footer>
+  Fuente: <a href="https://docs.google.com/spreadsheets/d/1XK6qxbjGrQYjW8nvlmxONOSekHCz38Y6MEHmbD_m5JU" target="_blank">Google Sheets</a>
+  · Actualizado automáticamente · PAU Historia de la Filosofía
+</footer>
+
+<script>
+const SHEET_ID = '1XK6qxbjGrQYjW8nvlmxONOSekHCz38Y6MEHmbD_m5JU';
+const URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Tabla%20comparativa`;
+
+// Configuración de columnas: índice en el sheet → época y clase CSS
+const COLS = [
+  { idx: 0, label: 'EJE / CONCEPTO', epoca: 'concepto',  thEpoca: '',                  thAutor: '',              bgClass: '',          princClass: 'td-concepto-princ' },
+  { idx: 1, label: 'PLATÓN',         epoca: 'antigua',   thEpoca: 'th-bg-antigua',     thAutor: 'th-bg-antigua', bgClass: 'bg-antigua', princClass: 'princ-antigua' },
+  { idx: 2, label: 'TOMÁS DE AQUINO',epoca: 'medieval',  thEpoca: 'th-bg-medieval',    thAutor: 'th-bg-medieval',bgClass: 'bg-medieval',princClass: 'princ-medieval' },
+  { idx: 3, label: 'DESCARTES',      epoca: 'moderna',   thEpoca: 'th-bg-moderna',     thAutor: 'th-bg-moderna', bgClass: 'bg-moderna', princClass: 'princ-moderna' },
+  { idx: 4, label: 'LOCKE',          epoca: 'moderna',   thEpoca: 'th-bg-moderna',     thAutor: 'th-bg-moderna', bgClass: 'bg-moderna', princClass: 'princ-moderna' },
+  { idx: 5, label: 'MARX',           epoca: 'contemp',   thEpoca: 'th-bg-contemp',     thAutor: 'th-bg-contemp', bgClass: 'bg-marx',    princClass: 'princ-contemp' },
+  { idx: 6, label: 'ARENDT',         epoca: 'contemp',   thEpoca: 'th-bg-contemp',     thAutor: 'th-bg-contemp', bgClass: 'bg-arendt',  princClass: 'princ-contemp' },
+];
+
+const EPOCAS_LABELS = {
+  antigua:  'ANTIGUA',
+  medieval: 'MEDIEVAL',
+  moderna:  'MODERNA',
+  contemp:  'CONTEMPORÁNEA',
+};
+
+let currentEpocas = new Set(['antigua','medieval','moderna','contemp']);
+let ejeGroups = {}; // ejeId → [row elements]
+let ejeRows   = {}; // ejeId → header row element
+let ejeState  = {}; // ejeId → expanded bool
+
+function parseGvizJson(raw) {
+  const json = raw.replace(/^[^(]+\(/, '').replace(/\);?\s*$/, '');
+  return JSON.parse(json);
+}
+
+function detectRowType(cells) {
+  const first = (cells[0] || '').trim();
+  if (!first) return 'empty';
+  // Eje: todas las demás celdas vacías
+  const rest = cells.slice(1).every(c => !c || c.trim() === '');
+  if (rest && first.match(/^[A-Z★]/)) return 'eje';
+  if (first.startsWith('★')) return 'principio';
+  return 'data';
+}
+
+function buildTable(data) {
+  const rows = data.table.rows;
+  const thead = document.getElementById('thead');
+  const tbody = document.getElementById('tbody');
+
+  // ── CABECERA ──────────────────────────────────────────────────────────
+  // Fila 1: épocas (merged)
+  const tr1 = document.createElement('tr');
+  // celda vacía para col concepto
+  const thEmpty = document.createElement('th');
+  thEmpty.className = 'th-epoca col-concepto';
+  thEmpty.rowSpan = 2;
+  tr1.appendChild(thEmpty);
+
+  // agrupamos columnas por época para el colspan
+  const epocaGroups = [];
+  let prev = null;
+  for (const col of COLS.slice(1)) {
+    if (col.epoca !== prev) {
+      epocaGroups.push({ epoca: col.epoca, cols: [col], thClass: col.thEpoca });
+      prev = col.epoca;
+    } else {
+      epocaGroups[epocaGroups.length - 1].cols.push(col);
+    }
+  }
+
+  for (const g of epocaGroups) {
+    const th = document.createElement('th');
+    th.className = `th-epoca ${g.thClass}`;
+    th.colSpan = g.cols.length;
+    th.textContent = EPOCAS_LABELS[g.epoca];
+    th.dataset.epoca = g.epoca;
+    tr1.appendChild(th);
+  }
+  thead.appendChild(tr1);
+
+  // Fila 2: autores
+  const tr2 = document.createElement('tr');
+  for (const col of COLS.slice(1)) {
+    const th = document.createElement('th');
+    th.className = `th-autor col-autor ${col.thAutor}`;
+    th.textContent = col.label;
+    th.dataset.epoca = col.epoca;
+    th.dataset.colidx = col.idx;
+    tr2.appendChild(th);
+  }
+  thead.appendChild(tr2);
+
+  // ── CUERPO ────────────────────────────────────────────────────────────
+  let currentEje = null;
+  let ejeCounter = 0;
+
+  for (const row of rows) {
+    const cells = COLS.map(col => {
+      const c = row.c[col.idx];
+      return (c && c.v !== null && c.v !== undefined) ? String(c.v) : '';
+    });
+
+    const type = detectRowType(cells);
+    if (type === 'empty') continue;
+
+    if (type === 'eje') {
+      ejeCounter++;
+      currentEje = 'eje' + ejeCounter;
+      ejeGroups[currentEje] = [];
+      ejeState[currentEje] = true;
+
+      const tr = document.createElement('tr');
+      tr.className = 'row-eje';
+      tr.dataset.eje = currentEje;
+      tr.onclick = () => toggleEje(currentEje);
+
+      const td = document.createElement('td');
+      td.colSpan = COLS.length;
+      td.innerHTML = `<span class="toggle-icon">▼</span>${cells[0]}`;
+      tr.appendChild(td);
+      tbody.appendChild(tr);
+      ejeRows[currentEje] = tr;
+
+    } else if (type === 'principio') {
+      const tr = document.createElement('tr');
+      tr.className = 'row-principio';
+      if (currentEje) {
+        tr.dataset.parentEje = currentEje;
+        ejeGroups[currentEje].push(tr);
+      }
+
+      for (const col of COLS) {
+        const td = document.createElement('td');
+        td.dataset.epoca = col.epoca;
+        td.dataset.colidx = col.idx;
+        const val = cells[col.idx];
+        if (col.idx === 0) {
+          td.className = col.princClass;
+          td.textContent = val || '★ PRINCIPIO FUNDAMENTAL';
+        } else {
+          td.className = col.princClass;
+          td.textContent = val;
+        }
+        tr.appendChild(td);
+      }
+      tbody.appendChild(tr);
+
+    } else {
+      const tr = document.createElement('tr');
+      tr.className = 'row-data';
+      if (currentEje) {
+        tr.dataset.parentEje = currentEje;
+        ejeGroups[currentEje].push(tr);
+      }
+
+      for (const col of COLS) {
+        const td = document.createElement('td');
+        td.dataset.epoca = col.epoca;
+        td.dataset.colidx = col.idx;
+        const val = cells[col.idx];
+        const isNA = (val === '—' || val === '-' || val === '');
+
+        if (col.idx === 0) {
+          td.className = 'td-concepto';
+          td.textContent = val;
+        } else if (isNA) {
+          td.className = `${col.bgClass} na-cell`;
+          td.textContent = val || '—';
+        } else {
+          td.className = col.bgClass;
+          td.textContent = val;
+        }
+        tr.appendChild(td);
+      }
+      tbody.appendChild(tr);
+    }
+  }
+
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('tabla').style.display = '';
+  applyVisibility();
+}
+
+// ── PLIEGUE DE EJES ───────────────────────────────────────────────────────
+function toggleEje(ejeId) {
+  ejeState[ejeId] = !ejeState[ejeId];
+  const headerRow = ejeRows[ejeId];
+  headerRow.classList.toggle('collapsed', !ejeState[ejeId]);
+  for (const row of (ejeGroups[ejeId] || [])) {
+    row.classList.toggle('row-hidden', !ejeState[ejeId]);
+  }
+}
+
+function expandAll() {
+  for (const ejeId of Object.keys(ejeState)) {
+    if (!ejeState[ejeId]) toggleEje(ejeId);
+  }
+}
+
+function collapseAll() {
+  for (const ejeId of Object.keys(ejeState)) {
+    if (ejeState[ejeId]) toggleEje(ejeId);
+  }
+}
+
+// ── TOGGLE ÉPOCAS ─────────────────────────────────────────────────────────
+function toggleEpoca(btn) {
+  const epoca = btn.dataset.epoca;
+  if (currentEpocas.has(epoca)) {
+    if (currentEpocas.size === 1) return; // no dejar sin ninguna
+    currentEpocas.delete(epoca);
+    btn.classList.remove('active');
+  } else {
+    currentEpocas.add(epoca);
+    btn.classList.add('active');
+  }
+  applyVisibility();
+}
+
+function applyVisibility() {
+  // Columnas thead
+  document.querySelectorAll('[data-epoca]').forEach(el => {
+    const e = el.dataset.epoca;
+    if (!e || e === 'concepto') return;
+    const hidden = !currentEpocas.has(e);
+    el.classList.toggle('col-hidden', hidden);
+  });
+}
+
+// ── CARGA DE DATOS ────────────────────────────────────────────────────────
+fetch(URL)
+  .then(r => r.text())
+  .then(raw => {
+    const data = parseGvizJson(raw);
+    buildTable(data);
+  })
+  .catch(err => {
+    document.getElementById('loading').style.display = 'none';
+    const em = document.getElementById('error-msg');
+    em.style.display = 'block';
+    em.textContent = `No se han podido cargar los datos. Asegúrate de que la hoja de Google Sheets es pública. Error: ${err.message}`;
+  });
+</script>
+</body>
+</html>
