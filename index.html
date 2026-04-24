@@ -486,10 +486,10 @@ function buildTable(data) {
 // ── PLIEGUE DE EJES ───────────────────────────────────────────────────────
 function toggleEje(ejeId) {
   ejeState[ejeId] = !ejeState[ejeId];
-  const headerRow = ejeRows[ejeId];
-  headerRow.classList.toggle('collapsed', !ejeState[ejeId]);
+  const expanded = ejeState[ejeId];
+  ejeRows[ejeId].classList.toggle('collapsed', !expanded);
   for (const row of (ejeGroups[ejeId] || [])) {
-    row.classList.toggle('row-hidden', !ejeState[ejeId]);
+    row.style.display = expanded ? '' : 'none';
   }
 }
 
